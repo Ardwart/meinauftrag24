@@ -125,6 +125,23 @@ async function offer(jobId,title){
   renderJobs();
 }
 
+ async function monthlyOfferCount(){
+  if(!session || profile?.role!=='provider') return 0;
+
+  const now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  const end=new Date(now.getFullYear(),now.getMonth()+1,1).toISOString();
+
+  const {count,error}=await sb
+    .from('offers')
+    .select('*',{count:'exact',head:true})
+    .eq('provider_id',session.user.id)
+    .gte('created_at',start)
+    .lt('created_at',end);
+
+  if(error) return 0;
+  return count||0;
+}
   async function renderMy(){if(profile?.role==='provider')window.currentMonthlyOfferCount=await monthlyOfferCount();const p=$('myProfile'),c=$('myContent');if(!session){show('login');return}p.innerHTML=`<div class="row"><div><span class="pill ${profile.role==='provider'?'blue':'green'}">${profile.role==='provider'?'Anbieter':'Kunde'}</span><h3>${esc(profile.company_name||profile.full_name)}</h3><div class="meta">${esc(session.user.email)} · ${esc(profile.postal_code||'')} ${esc(profile.city||'')}</div></div>${profile.role==='provider'?`<button class="btn secondary small" onclick="openBillingPortal()">Abo ansehen</button>`:''}</div>`;if(profile.role==='customer'){const {data:jobs}=await sb.from('jobs').select('*,offers(id,amount,message,status,provider_id)').eq('customer_id',session.user.id).order('created_at',{ascending:false});c.innerHTML=jobs?.length?jobs.map(j=>`<article class="item"><h3>${esc(j.title)}</h3><div class="meta">Status: ${esc(j.status)} · ${j.offers?.length||0} Offerten</div>${(j.offers||[]).map(o=>`<div class="notice info"><strong>${o.amount?'CHF '+esc(o.amount):'Preis nach Absprache'}</strong><div>${esc(o.message)}</div><div class="meta">Status: ${esc(o.status)}</div></div>`).join('')}</article>`).join(''):'<div class="card">Noch keine eigenen Aufträge.</div>'}else{const {data:offs}=await sb.from('offers').select('*,jobs(title,city,postal_code,status)').eq('provider_id',session.user.id).order('created_at',{ascending:false});c.innerHTML=`${subscriptionNotice()}${offs?.length?offs.map(o=>`<article class="item"><h3>${esc(o.jobs?.title||'Auftrag')}</h3><div class="meta">${esc(o.jobs?.postal_code||'')} ${esc(o.jobs?.city||'')} · ${esc(o.status)}</div><p class="desc">${esc(o.message)}</p></article>`).join(''):'<div class="card">Noch keine Offerten gesendet.</div>'}`}}
 async function startCheckout(plan){
   const msg=$('paymentMsg'); msg.classList.remove('hidden'); msg.textContent='Stripe Checkout wird geöffnet …';
