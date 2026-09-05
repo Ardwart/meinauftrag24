@@ -17,7 +17,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdro
 </style>
 </head>
 <body>
-<header><div class="wrap nav"><div class="brand"><div class="logo"></div><div>meinauftrag<b>24</b></div></div><div class="navlinks"><button class="desktopNav" data-go="home">Start</button><button class="desktopNav" data-go="pricing">Preise</button><span id="authNav"></span></div></div></header>
+<header><div class="wrap nav"><div class="brand"><div class="logo"></div><div>meinauftrag<b>24</b></div></div><div class="navlinks"><button class="desktopNav" data-go="home">Start</button><button class="desktopNav" data-go="pricing">Preise</button><button class="desktopNav" data-go="support">Support</button><span id="authNav"></span></div></div></header>
 
 <main>
 <section id="home" class="panel active">
@@ -36,6 +36,53 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdro
 <section id="my" class="panel"><div class="wrap"><div class="sectionHead"><div><h2>Mein Konto</h2><p>Profil, eigene Aufträge und Offerten.</p></div></div><div id="myProfile" class="card"></div><div style="height:14px"></div><div id="myContent" class="list"></div></div></section>
 
 <section id="pricing" class="panel"><div class="wrap"><div class="sectionHead"><div><h2>Preise für Anbieter</h2><p>Kunden bezahlen nichts.</p></div></div><div class="pricing"><div class="plan"><span class="pill green">Kunden</span><h3>Kostenlos</h3><div class="price">CHF 0</div><ul><li>Aufträge erstellen</li><li>Offerten erhalten</li><li>Anbieter vergleichen</li><li>Keine Monatsgebühr</li></ul></div><div class="plan"><span class="pill blue">Anbieter</span><h3>Basic</h3><div class="price">CHF 29</div><div class="meta">pro Monat</div><ul><li>Aufträge entdecken</li><li>Bis 10 Offerten / Monat</li><li>Nachrichten an Kunden</li><li>Firmenprofil</li></ul><button class="btn secondary" onclick="startCheckout('basic')">Basic wählen</button></div><div class="plan featured"><span class="pill blue">Empfohlen</span><h3>Pro</h3><div class="price">CHF 59</div><div class="meta">pro Monat</div><ul><li>Unbegrenzte Offerten</li><li>Nachrichten an Kunden</li><li>Firmenprofil</li><li>Später bevorzugte Platzierung</li></ul><button class="btn primary" onclick="startCheckout('pro')">Pro wählen</button></div></div><div id="paymentMsg" class="notice info hidden">Stripe Checkout ist verbunden. Melde dich als Anbieter an und wähle Basic oder Pro.</div></div></section>
+
+  <section id="support" class="panel">
+  <div class="wrap">
+    <div class="sectionHead">
+      <div>
+        <h2>Hilfe & Support</h2>
+        <p>Wir helfen dir bei Fragen oder Problemen rund um MeinAuftrag24.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="formGrid">
+        <label>
+          Name
+          <input id="supportName" placeholder="Vor- und Nachname">
+        </label>
+
+        <label>
+          E-Mail
+          <input id="supportEmail" type="email" placeholder="name@email.ch">
+        </label>
+
+        <label class="full">
+          Kategorie
+          <select id="supportCategory">
+            <option>Problem mit einem Auftrag</option>
+            <option>Problem mit Kunde oder Anbieter</option>
+            <option>Abo & Zahlung</option>
+            <option>Technisches Problem</option>
+            <option>Sonstiges</option>
+          </select>
+        </label>
+
+        <label class="full">
+          Nachricht
+          <textarea id="supportMessage" rows="6" placeholder="Beschreibe hier dein Anliegen..."></textarea>
+        </label>
+
+        <div class="full">
+          <button class="btn primary" type="button" onclick="sendSupport()">Supportanfrage senden</button>
+        </div>
+      </div>
+
+      <p id="supportStatus" class="meta"></p>
+    </div>
+  </div>
+</section>
 </main>
 
 <footer class="footer"><div class="wrap footerGrid"><strong>MeinAuftrag24</strong><span>Schweizer Plattform für Dienstleistungen · Kunden kostenlos · Anbieter mit Abo</span></div></footer>
@@ -152,6 +199,36 @@ async function startCheckout(plan){
   const {data,error}=await sb.functions.invoke('create-checkout-session',{body:{plan,returnUrl}});
   if(error||!data?.url){msg.textContent='Checkout konnte nicht gestartet werden: '+(error?.message||data?.error||'Unbekannter Fehler'); return;}
   location.href=data.url;
+}
+  async function sendSupport(){
+  const name=$('supportName').value.trim();
+  const email=$('supportEmail').value.trim();
+  const category=$('supportCategory').value;
+  const message=$('supportMessage').value.trim();
+  const status=$('supportStatus');
+
+  if(!name || !email || !message){
+    status.textContent='Bitte Name, E-Mail und Nachricht ausfüllen.';
+    return;
+  }
+
+  const {data:{session}}=await sb.auth.getSession();
+
+  const {error}=await sb.from('support_requests').insert({
+    user_id:session?.user?.id || null,
+    name,
+    email,
+    category,
+    message
+  });
+
+  if(error){
+    status.textContent='Supportanfrage konnte nicht gesendet werden.';
+    return;
+  }
+
+  status.textContent='Danke. Deine Supportanfrage wurde gesendet.';
+  $('supportMessage').value='';
 }
   async function openBillingPortal(){
   try{
