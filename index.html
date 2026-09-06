@@ -200,7 +200,7 @@ async function startCheckout(plan){
   if(error||!data?.url){msg.textContent='Checkout konnte nicht gestartet werden: '+(error?.message||data?.error||'Unbekannter Fehler'); return;}
   location.href=data.url;
 }
-  async function sendSupport(){
+async function sendSupport(){
   const name=$('supportName').value.trim();
   const email=$('supportEmail').value.trim();
   const category=$('supportCategory').value;
@@ -212,24 +212,32 @@ async function startCheckout(plan){
     return;
   }
 
-  const {data:{session}}=await sb.auth.getSession();
+  status.textContent='Supportanfrage wird gesendet …';
 
-  const {error}=await sb.from('support_requests').insert({
-    user_id:session?.user?.id || null,
-    name,
-    email,
-    category,
-    message
-  });
+  try{
+    const {data,error}=await sb.functions.invoke('send-support-request',{
+      body:{
+        name,
+        email,
+        category,
+        message
+      }
+    });
 
-  if(error){
+    if(error || data?.error){
+      console.error('Support Fehler:',error || data?.error);
+      status.textContent='Supportanfrage konnte nicht gesendet werden.';
+      return;
+    }
+
+    status.textContent='Danke. Deine Supportanfrage wurde gesendet.';
+    $('supportMessage').value='';
+  }catch(error){
+    console.error('Support Fehler:',error);
     status.textContent='Supportanfrage konnte nicht gesendet werden.';
-    return;
   }
+}  
 
-  status.textContent='Danke. Deine Supportanfrage wurde gesendet.';
-  $('supportMessage').value='';
-}
   async function openBillingPortal(){
   try{
     const {data:{session}}=await sb.auth.getSession();
