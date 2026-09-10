@@ -81,4 +81,5 @@ async function openBillingPortal(){const {data,error}=await sb.functions.invoke(
 async function sendSupport(){const name=$('supportName').value.trim(),email=$('supportEmail').value.trim(),category=$('supportCategory').value,message=$('supportMessage').value.trim(),status=$('supportStatus');if(!name||!email||!message){status.textContent='Bitte Name, E-Mail und Nachricht ausfüllen.';return}status.textContent='Supportanfrage wird gesendet …';const {data,error}=await sb.functions.invoke('send-support-request',{body:{name,email,category,message}});status.textContent=error||data?.error?'Supportanfrage konnte nicht gesendet werden.':'Danke. Deine Supportanfrage wurde gesendet.';if(!error&&!data?.error)$('supportMessage').value=''}
 sb.auth.onAuthStateChange(async()=>{await refreshUser()});(async()=>{await refreshUser();authUI()})();
 </script>
+<script src="/provider-profile.js"></script>
 </body></html>
