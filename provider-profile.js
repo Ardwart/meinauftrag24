@@ -9,7 +9,9 @@
   }
   load('/provider-profile-core.js',()=>{
     load('/job-checklist.js',()=>{
-      load('/rental-marketplace.js',()=>load('/rental-management.js'));
+      load('/rental-marketplace.js',()=>{
+        load('/rental-management.js',()=>load('/rental-edit.js'));
+      });
     });
   });
 })();
