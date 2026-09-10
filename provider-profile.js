@@ -1,7 +1,11 @@
 // MeinAuftrag24 – Anbieterprofil mit Profilfoto & Referenzbildern
 (() => {
   const MEDIA_BUCKET = 'provider-media';
-  const MAX_PORTFOLIO = 8;
+
+  function portfolioLimit(){
+    if(!activeSub()) return 0;
+    return subscription?.plan==='pro' ? 30 : 8;
+  }
 
   const style = document.createElement('style');
   style.textContent = `
@@ -28,7 +32,6 @@
     return sb.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
-  // Include role + avatar so the normal account view can render a serious provider identity.
   getProfiles = async function(ids){
     const unique=[...new Set(ids.filter(Boolean))];
     if(!unique.length)return{};
@@ -36,7 +39,6 @@
     return Object.fromEntries((data||[]).map(p=>[p.id,p]));
   };
 
-  // Customer phone stays private. Provider business contact and provider profile can be shown to customers.
   contactInfo = function(p){
     if(!p)return'';
     const isProvider=p.role==='provider';
@@ -86,8 +88,15 @@
     const input=$('portfolioInput'), file=input?.files?.[0];
     if(!file)return alert('Bitte zuerst ein Foto auswählen.');
     try{
+      const limit=portfolioLimit();
       const {count}=await sb.from('provider_portfolio').select('*',{count:'exact',head:true}).eq('provider_id',session.user.id);
-      if((count||0)>=MAX_PORTFOLIO)return alert(`Du kannst maximal ${MAX_PORTFOLIO} Referenzbilder hochladen.`);
+      if((count||0)>=limit){
+        if(subscription?.plan==='basic'){
+          $('modalRoot').innerHTML=`<div class="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><span class="pill orange">Basic-Limit erreicht</span><h3 style="margin-top:10px">8 Referenzbilder erreicht</h3><p class="desc">Du hast dein Basic-Limit von 8 Referenzbildern erreicht. Mit Pro kannst du bis zu 30 Referenzbilder präsentieren und unbegrenzt Offerten senden.</p><div class="modalActions"><button class="btn ghost" onclick="closeModal()">Später</button><button class="btn primary" onclick="closeModal();show('pricing')">Auf Pro wechseln</button></div></div></div>`;
+          return;
+        }
+        return alert(`Du hast dein Pro-Limit von ${limit} Referenzbildern erreicht.`);
+      }
       const path=await uploadProviderFile(file,'work');
       const caption=($('portfolioCaption')?.value||'').trim();
       const {error}=await sb.from('provider_portfolio').insert({provider_id:session.user.id,image_path:path,caption:caption||null});
@@ -110,9 +119,11 @@
     const target=$('myProfile');
     if(!target)return;
     const {data:photos}=await sb.from('provider_portfolio').select('*').eq('provider_id',session.user.id).order('created_at',{ascending:false});
+    const count=photos?.length||0,limit=portfolioLimit();
     const avatar=profile.avatar_url?`<img class="providerAvatar large" src="${esc(publicMediaUrl(profile.avatar_url))}" alt="Profilfoto">`:`<div class="providerAvatar large" style="display:grid;place-items:center;font-size:34px">👤</div>`;
     const lock=!activeSub()?`<div class="notice warn"><strong>Profilbilder sind für Anbieter mit aktivem Abo verfügbar.</strong> Aktiviere Basic oder Pro, um dein Anbieterprofil mit Fotos aufzuwerten.</div>`:'';
-    target.insertAdjacentHTML('beforeend',`<div class="profileMediaBox"><h3 style="margin-top:0">Dein Anbieterprofil</h3><p class="meta">Kunden sehen dein Profilfoto und deine Referenzarbeiten bei deinen Offerten und Nachrichten.</p>${lock}<div class="profileHero">${avatar}<div style="flex:1"><strong>Profilfoto</strong><div class="uploadLine"><input id="providerAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" ${activeSub()?'':'disabled'}><button class="btn secondary small" onclick="uploadProviderAvatar()" ${activeSub()?'':'disabled'}>Profilfoto hochladen</button></div><div class="meta">JPG, PNG oder WebP · maximal 5 MB</div></div></div><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><strong>Referenzbilder / ausgeführte Arbeiten</strong><div class="meta">Bis zu ${MAX_PORTFOLIO} Bilder. Lade nur Bilder hoch, für die du die nötigen Rechte hast.</div><div class="uploadLine"><input id="portfolioInput" type="file" accept="image/jpeg,image/png,image/webp" ${activeSub()?'':'disabled'}><input id="portfolioCaption" placeholder="Kurze Beschreibung, z.B. Endreinigung" style="max-width:300px" ${activeSub()?'':'disabled'}><button class="btn primary small" onclick="uploadPortfolioPhoto()" ${activeSub()?'':'disabled'}>Foto hinzufügen</button></div>${photos?.length?`<div class="mediaGrid">${photos.map(x=>`<div class="mediaTile"><img src="${esc(publicMediaUrl(x.image_path))}" alt="Referenzbild"><button onclick="deletePortfolioPhoto('${x.id}','${esc(x.image_path)}')" title="Bild löschen">×</button></div>`).join('')}</div>`:'<div class="notice info">Noch keine Referenzbilder vorhanden.</div>'}</div>`);
+    const upgrade=activeSub()&&subscription?.plan==='basic'&&count>=8?`<div class="notice warn"><strong>Basic-Limit erreicht: 8 von 8 Referenzbildern.</strong><br>Mit Pro kannst du bis zu 30 Referenzbilder präsentieren.<div class="toolbar"><button class="btn primary small" onclick="show('pricing')">Auf Pro wechseln</button></div></div>`:'';
+    target.insertAdjacentHTML('beforeend',`<div class="profileMediaBox"><h3 style="margin-top:0">Dein Anbieterprofil</h3><p class="meta">Kunden sehen dein Profilfoto und deine Referenzarbeiten bei deinen Offerten und Nachrichten.</p>${lock}<div class="profileHero">${avatar}<div style="flex:1"><strong>Profilfoto</strong><div class="uploadLine"><input id="providerAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" ${activeSub()?'':'disabled'}><button class="btn secondary small" onclick="uploadProviderAvatar()" ${activeSub()?'':'disabled'}>Profilfoto hochladen</button></div><div class="meta">JPG, PNG oder WebP · maximal 5 MB</div></div></div><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><strong>Referenzbilder / ausgeführte Arbeiten</strong><div class="meta">${activeSub()?`${subscription?.plan==='pro'?'Pro':'Basic'}: ${count} von ${limit} Bildern verwendet.`:'Basic: bis 8 Bilder · Pro: bis 30 Bilder'} Lade nur Bilder hoch, für die du die nötigen Rechte hast.</div>${upgrade}<div class="uploadLine"><input id="portfolioInput" type="file" accept="image/jpeg,image/png,image/webp" ${activeSub()&&count<limit?'':'disabled'}><input id="portfolioCaption" placeholder="Kurze Beschreibung, z.B. Endreinigung" style="max-width:300px" ${activeSub()&&count<limit?'':'disabled'}><button class="btn primary small" onclick="uploadPortfolioPhoto()" ${activeSub()&&count<limit?'':'disabled'}>Foto hinzufügen</button></div>${photos?.length?`<div class="mediaGrid">${photos.map(x=>`<div class="mediaTile"><img src="${esc(publicMediaUrl(x.image_path))}" alt="Referenzbild"><button onclick="deletePortfolioPhoto('${x.id}','${esc(x.image_path)}')" title="Bild löschen">×</button></div>`).join('')}</div>`:'<div class="notice info">Noch keine Referenzbilder vorhanden.</div>'}</div>`);
   }
 
   const originalRenderMy = renderMy;
