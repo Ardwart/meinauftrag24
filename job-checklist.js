@@ -6,7 +6,9 @@
   'Garten':['Rasen mähen','Hecken schneiden','Sträucher schneiden','Jäten / Unkraut entfernen','Laub entfernen','Pflanzen / Blumen pflegen','Bewässerung','Grüngut entsorgen','Baumarbeiten','Neubepflanzung'],
   'Umzug':['Möbel transportieren','Möbel demontieren','Möbel montieren','Umzugskartons','Einpackservice','Auspackservice','Klavier / schwere Gegenstände','Entsorgung / Räumung','Endreinigung','Möbellift erforderlich'],
   'Reparaturen':['Montagearbeiten','Türen / Schlösser','Sanitär / Wasser','WC / Spülung','Elektro-Kleinarbeiten','Silikonfugen','Malerarbeiten','Boden / Parkett','Gips / Wände','Material durch Anbieter','Entsorgung'],
-  'Winterdienst':['Schnee räumen','Salz / Splitt streuen','Hauszugang','Gehwege','Parkplätze','Tiefgaragenzufahrt','Bereitschaft bei Schneefall','Streumittel durch Anbieter']
+  'Winterdienst':['Schnee räumen','Salz / Splitt streuen','Hauszugang','Gehwege','Parkplätze','Tiefgaragenzufahrt','Bereitschaft bei Schneefall','Streumittel durch Anbieter'],
+  'Renovation':['Komplette Wohnungsrenovation','Malerarbeiten Wände / Decken','Boden / Parkett','Plattenarbeiten','Gips / Trockenbau','Küche renovieren / montieren','Bad / WC renovieren','Türen / Zargen','Sanitär / Wasser','Elektroarbeiten','Silikonfugen','Abbrucharbeiten','Material durch Anbieter','Entsorgung'],
+  'Transport':['Möbeltransport','Kleintransport','Lieferung / Abholung','Warentransport','Fahrzeugtransport','Räumung / Entsorgung','Tragehilfe benötigt','Demontage / Montage','Schwere Gegenstände','Transporter mit Fahrer','Mehrere Fahrten','Besichtigung gewünscht']
  };
  const norm=s=>(s||'').toLowerCase();
  function itemsFor(category){const c=norm(category);for(const [k,v] of Object.entries(CHECKLISTS))if(c.includes(norm(k)))return v;return ['Material durch Anbieter','Entsorgung','Besichtigung gewünscht','Weitere Arbeiten gemäss Beschreibung'];}
@@ -16,7 +18,6 @@
  function mount(){const cat=$('jobCategory');if(!cat)return;let m=$('jobChecklistMount');if(!m){m=document.createElement('div');m.id='jobChecklistMount';m.className='full';const desc=$('jobDescription');(desc?.closest('label')||desc)?.insertAdjacentElement('beforebegin',m);}m.innerHTML=checklistBox(cat.value);cat.addEventListener('change',()=>m.innerHTML=checklistBox(cat.value));}
  function scopeHtml(items){if(!items?.length)return'';return `<div class="scopeChecklist"><strong>Gewünschte Leistungen:</strong>${items.map(x=>`<span>✓ ${esc(x)}</span>`).join('')}</div>`;}
  window.jobChecklistScopeHtml=scopeHtml;
- // Capture the checklist in every new job insert without changing the existing form workflow.
  const oldFrom=sb.from.bind(sb);sb.from=function(table){const q=oldFrom(table);if(table==='jobs'){const oldInsert=q.insert.bind(q);q.insert=function(values,...rest){if(values&&$('newjob')?.classList.contains('active')){const patch=v=>({...v,checklist:selectedItems()});values=Array.isArray(values)?values.map(patch):patch(values);}return oldInsert(values,...rest);};}return q;};
  document.addEventListener('DOMContentLoaded',mount);if(document.readyState!=='loading')setTimeout(mount,0);
 })();
