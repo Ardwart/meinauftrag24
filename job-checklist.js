@@ -21,6 +21,38 @@
    }
   });
  }
+ function openCategory(category){
+  ensureCategories();
+  const cat=$('jobCategory');if(cat){cat.value=category;cat.dispatchEvent(new Event('change'));}
+  if(session&&profile?.role==='provider'){
+   show('jobs');setTimeout(()=>filterVisibleJobs(category),150);return;
+  }
+  if(session&&profile?.role==='customer'){
+   $('jobZip').value=profile?.postal_code||'';$('jobCity').value=profile?.city||'';show('newjob');return;
+  }
+  show('register');
+  const role=$('regRole');if(role)role.value='customer';
+ }
+ function filterVisibleJobs(category){
+  const list=$('jobsList');if(!list)return;
+  [...list.querySelectorAll(':scope > article.item')].forEach(card=>{
+   const pill=card.querySelector('.pill')?.textContent.trim()||'';
+   card.style.display=norm(pill)===norm(category)?'':'none';
+  });
+  let note=$('m24CategoryFilter');
+  if(!note){note=document.createElement('div');note.id='m24CategoryFilter';note.className='notice info';list.parentNode.insertBefore(note,list);}
+  note.innerHTML=`Kategorie: <strong>${esc(category)}</strong> <button class="btn ghost small" id="m24ShowAllJobs">Alle Aufträge anzeigen</button>`;
+  $('m24ShowAllJobs').onclick=()=>{[...list.querySelectorAll(':scope > article.item')].forEach(x=>x.style.display='');note.remove();};
+ }
+ function makeHomeCategoriesClickable(){
+  const grid=document.querySelector('#home .categories');if(!grid)return;
+  [...grid.querySelectorAll('.category')].forEach(card=>{
+   const title=card.querySelector('b')?.textContent.trim();if(!title||card.dataset.m24ClickBound)return;
+   card.dataset.m24Category=card.dataset.m24Category||title;card.dataset.m24ClickBound='1';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',`${title} öffnen`);
+   card.addEventListener('click',()=>openCategory(card.dataset.m24Category));
+   card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCategory(card.dataset.m24Category);}});
+  });
+ }
  function ensureHomeCategories(){
   const grid=document.querySelector('#home .categories');if(!grid)return;
   const additions=[
@@ -33,6 +65,7 @@
    el.innerHTML=`<div class="ico">${ico}</div><b>${title}</b><span>${text}</span>`;
    grid.appendChild(el);
   });
+  makeHomeCategoriesClickable();
  }
  function ensurePricingBenefits(){
   const plans=[...document.querySelectorAll('#pricing .plan')];
@@ -45,13 +78,11 @@
  function itemsFor(category){const c=norm(category);for(const [k,v] of Object.entries(CHECKLISTS))if(c.includes(norm(k)))return v;return ['Material durch Anbieter','Entsorgung','Besichtigung gewünscht','Weitere Arbeiten gemäss Beschreibung'];}
  function checklistBox(category,selected=[]){const set=new Set((selected||[]).map(String));return `<div class="jobChecklistBox"><strong>Was soll gemacht werden?</strong><div class="meta" style="margin:5px 0 10px">Bitte alles auswählen, was zur Offerte gehören soll.</div><div class="jobChecklistGrid">${itemsFor(category).map(x=>`<label class="jobCheck"><input type="checkbox" value="${esc(x)}" ${set.has(x)?'checked':''}><span>${esc(x)}</span></label>`).join('')}</div></div>`;}
  function selectedItems(){return [...document.querySelectorAll('#jobChecklistMount .jobCheck input:checked')].map(x=>x.value);}
- const style=document.createElement('style');style.textContent=`.jobChecklistBox{border:1px solid var(--line);background:#f8fbff;border-radius:16px;padding:16px;margin-top:4px}.jobChecklistGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.jobCheck{display:flex!important;align-items:flex-start;gap:9px!important;padding:9px 10px;background:#fff;border:1px solid var(--line);border-radius:11px;font-weight:650!important}.jobCheck input{width:18px;height:18px;flex:0 0 auto;margin:1px 0}.scopeChecklist{display:grid;gap:5px;margin:12px 0;padding:12px 14px;border-radius:13px;background:#f8fbff;border:1px solid #dbe7ff}.scopeChecklist span{font-size:13px;color:#344054}@media(max-width:700px){.jobChecklistGrid{grid-template-columns:1fr}}`;document.head.appendChild(style);
- function mount(){ensureCategories();ensureHomeCategories();ensurePricingBenefits();const cat=$('jobCategory');if(!cat)return;let m=$('jobChecklistMount');if(!m){m=document.createElement('div');m.id='jobChecklistMount';m.className='full';const desc=$('jobDescription');(desc?.closest('label')||desc)?.insertAdjacentElement('beforebegin',m);}m.innerHTML=checklistBox(cat.value);if(!cat.dataset.checklistBound){cat.addEventListener('change',()=>m.innerHTML=checklistBox(cat.value));cat.dataset.checklistBound='1';}}
+ const style=document.createElement('style');style.textContent=`.jobChecklistBox{border:1px solid var(--line);background:#f8fbff;border-radius:16px;padding:16px;margin-top:4px}.jobChecklistGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.jobCheck{display:flex!important;align-items:flex-start;gap:9px!important;padding:9px 10px;background:#fff;border:1px solid var(--line);border-radius:11px;font-weight:650!important}.jobCheck input{width:18px;height:18px;flex:0 0 auto;margin:1px 0}.scopeChecklist{display:grid;gap:5px;margin:12px 0;padding:12px 14px;border-radius:13px;background:#f8fbff;border:1px solid #dbe7ff}.scopeChecklist span{font-size:13px;color:#344054}#home .category[role=button]{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}#home .category[role=button]:hover,#home .category[role=button]:focus{transform:translateY(-3px);box-shadow:0 12px 28px rgba(16,24,40,.10);border-color:#84adff;outline:none}@media(max-width:700px){.jobChecklistGrid{grid-template-columns:1fr}}`;document.head.appendChild(style);
+ function mount(){ensureCategories();ensureHomeCategories();ensurePricingBenefits();makeHomeCategoriesClickable();const cat=$('jobCategory');if(!cat)return;let m=$('jobChecklistMount');if(!m){m=document.createElement('div');m.id='jobChecklistMount';m.className='full';const desc=$('jobDescription');(desc?.closest('label')||desc)?.insertAdjacentElement('beforebegin',m);}m.innerHTML=checklistBox(cat.value);if(!cat.dataset.checklistBound){cat.addEventListener('change',()=>m.innerHTML=checklistBox(cat.value));cat.dataset.checklistBound='1';}}
  function scopeHtml(items){if(!items?.length)return'';return `<div class="scopeChecklist"><strong>Gewünschte Leistungen:</strong>${items.map(x=>`<span>✓ ${esc(x)}</span>`).join('')}</div>`;}
  window.jobChecklistScopeHtml=scopeHtml;
  const oldFrom=sb.from.bind(sb);sb.from=function(table){const q=oldFrom(table);if(table==='jobs'){const oldInsert=q.insert.bind(q);q.insert=function(values,...rest){if(values&&$('newjob')?.classList.contains('active')){const patch=v=>({...v,checklist:selectedItems()});values=Array.isArray(values)?values.map(patch):patch(values);}return oldInsert(values,...rest);};}return q;};
-
- // Checklisten auch bei sichtbaren Aufträgen anzeigen.
  const baseRenderJobs=window.renderJobs;
  if(typeof baseRenderJobs==='function')window.renderJobs=async function(){
   await baseRenderJobs();
@@ -60,8 +91,6 @@
   const cards=[...list.querySelectorAll(':scope > article.item')];
   (data||[]).forEach((j,i)=>{const card=cards[i];if(!card||card.querySelector('.scopeChecklist')||!j.checklist?.length)return;const desc=card.querySelector('.desc');desc?.insertAdjacentHTML('afterend',scopeHtml(j.checklist));});
  };
-
- // Bei eigenen Kunden-Aufträgen den vereinbarten Umfang ebenfalls zeigen.
  const baseRenderMy=window.renderMy;
  if(typeof baseRenderMy==='function')window.renderMy=async function(){
   await baseRenderMy();
@@ -70,6 +99,5 @@
   const cards=[...document.querySelectorAll('#myContent > article.item')];
   (data||[]).forEach((j,i)=>{const card=cards[i];if(!card||card.querySelector('.scopeChecklist')||!j.checklist?.length)return;const head=card.querySelector('.itemHead');head?.insertAdjacentHTML('afterend',scopeHtml(j.checklist));});
  };
-
  document.addEventListener('DOMContentLoaded',mount);if(document.readyState!=='loading')setTimeout(mount,0);
 })();
