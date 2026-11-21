@@ -5,7 +5,7 @@ const origins=["https://www.meinauftrag24.ch","https://meinauftrag24.ch",Deno.en
 function cors(req:Request){const o=req.headers.get("origin")||"";return {"access-control-allow-origin":origins.includes(o)?o:origins[0],"access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS","vary":"Origin"};}
 function result(req:Request,body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json",...cors(req)}});}
 const db=createClient(Deno.env.get("SUPABASE_URL")||"",Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"");
-const secret=Deno.env.get("STRIPE_RENTAL_SECRET_KEY")||"";
+const secret=(Deno.env.get("STRIPE_RENTAL_SECRET_KEY") || Deno.env.get("STRIPE_LIVE_SECRET_KEY"))||"";
 const isDate=(d:unknown)=>typeof d==="string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
 const isUuid=(s:unknown)=>typeof s==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 Deno.serve(async(req:Request)=>{
