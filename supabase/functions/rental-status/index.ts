@@ -8,7 +8,7 @@ const db=createClient(Deno.env.get("SUPABASE_URL")||"",Deno.env.get("SUPABASE_SE
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(req)});
  if(req.method!=="POST")return out(req,{error:"POST required"},405);
- const key=Deno.env.get("STRIPE_RENTAL_SECRET_KEY")||"";
+ const key=(Deno.env.get("STRIPE_RENTAL_SECRET_KEY") || Deno.env.get("STRIPE_LIVE_SECRET_KEY"))||"";
  if(!key.startsWith("sk_"))return out(req,{error:"Zahlungsstatus derzeit nicht verfügbar"},503);
  let body:Record<string,unknown>;
  try{body=await req.json();}catch{return out(req,{error:"Invalid request"},400);}
