@@ -45,7 +45,7 @@
     '</article>';
   }
   function carHtml(v){
-    const photo=(typeof v.photo_url==="string"&&v.photo_url.startsWith("https://"))?'<img class="homeRentalPhoto" src="'+esc(v.photo_url)+'" alt="Foto: '+esc(v.title)+'" loading="lazy">':'<div class="homeRentalPlaceholder">🚗</div>';
+    const photo=(typeof v.photo_url==="string"&&v.photo_url.startsWith("https://"))?'<button type="button" class="homePublicPhotoButton" data-public-rental-photos="'+esc(v.id)+'" aria-label="Fotos ansehen: '+esc(v.title)+'"><img class="homeRentalPhoto" src="'+esc(v.photo_url)+'" alt="Foto: '+esc(v.title)+'" loading="lazy"></button>':'<div class="homeRentalPlaceholder">🚗</div>';
     const sub=[v.make,v.model].filter(Boolean).map(esc).join(" · ");
     return '<article class="homeListingCard homeVehicleCard">'+
       photo+
@@ -56,7 +56,7 @@
         (v.available_from?'<span>Ab '+esc(date(v.available_from))+'</span>':'')+
       '</div>'+
       '<div class="homeListingFooter"><strong>'+esc(money(v.daily_rate))+' <small>/ Tag</small></strong>'+
-      '<button type="button" class="btn primary small" data-home-rental="'+esc(v.id)+'">Fahrzeug ansehen</button></div>'+
+      '<div class="homePhotoActions"><button type="button" class="btn secondary small" data-public-rental-photos="'+esc(v.id)+'">📷 Fotos ansehen</button><button type="button" class="btn primary small" data-home-rental="'+esc(v.id)+'">Fahrzeug ansehen</button></div></div>'+
       '</div></article>';
   }
   function renderJobs(){
@@ -146,6 +146,8 @@
     '.homeVehicleCard .homeVehicleText p{margin:0}'+
     '.homeRentalPhoto,.homeRentalPlaceholder{display:block;width:100%;height:192px;object-fit:cover;background:#edf2f8}'+
     '.homeRentalPlaceholder{display:grid;place-items:center;font-size:52px}'+
+    '.homePublicPhotoButton{appearance:none;display:block;width:100%;padding:0;margin:0;border:0;border-radius:0;cursor:zoom-in;background:transparent}'+
+    '.homePhotoActions{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}'+
     '@media(max-width:900px){.homeListingGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}'+
     '@media(max-width:640px){.homeListingGrid{grid-template-columns:1fr}.homeListingHead h2{font-size:27px}.homeRentalPhoto,.homeRentalPlaceholder{height:200px}.homeListingCard{padding:17px}.homeVehicleCard{padding:0}.homeListingActions .btn{flex:1}}';
   document.head.appendChild(style);
