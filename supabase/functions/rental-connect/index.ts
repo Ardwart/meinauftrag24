@@ -6,7 +6,7 @@ function cors(req: Request) { const o=req.headers.get("origin")||""; return {"ac
 function out(req:Request,data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json",...cors(req)}});}
 const url = Deno.env.get("SUPABASE_URL") || "";
 const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "");
-const key=Deno.env.get("STRIPE_RENTAL_SECRET_KEY") || "";
+const key=(Deno.env.get("STRIPE_RENTAL_SECRET_KEY") || Deno.env.get("STRIPE_LIVE_SECRET_KEY")) || "";
 const base="https://www.meinauftrag24.ch/";
 Deno.serve(async (req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(req)});
