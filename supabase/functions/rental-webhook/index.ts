@@ -43,7 +43,7 @@ async function notifyPaidBooking(bookingId:string){
 
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return json({error:"POST required"},405);
- const secret=Deno.env.get("STRIPE_RENTAL_SECRET_KEY")||"";
+ const secret=(Deno.env.get("STRIPE_RENTAL_SECRET_KEY") || Deno.env.get("STRIPE_LIVE_SECRET_KEY"))||"";
  const webhookSecret=Deno.env.get("STRIPE_RENTAL_WEBHOOK_SECRET")||"";
  if(!secret.startsWith("sk_")||!webhookSecret.startsWith("whsec_"))return json({error:"Rental webhook not configured"},503);
  const sig=req.headers.get("stripe-signature")||"";
